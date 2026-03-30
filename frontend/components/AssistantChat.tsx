@@ -51,7 +51,8 @@ export default function AssistantChat({
     setIsTyping(true);
 
     try {
-      const res = await fetch("http://localhost:5050/api/assistant/query", {
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+      const res = await fetch(`${BACKEND_URL}/api/assistant/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

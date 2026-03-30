@@ -47,8 +47,9 @@ export default function AssistantPage() {
 
   useEffect(() => {
     const fetchQuests = async () => {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
         try {
-            const res = await fetch(`http://localhost:5050/api/quests/generate`, {
+            const res = await fetch(`${BACKEND_URL}/api/quests/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ city: cityName, clerkId: user?.id })
@@ -89,7 +90,8 @@ export default function AssistantPage() {
   useEffect(() => {
     const fetchStories = async () => {
         try {
-            const res = await fetch(`http://localhost:5050/api/stories?city=${cityName}&clerkId=${user?.id}`);
+            const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+            const res = await fetch(`${BACKEND_URL}/api/stories?city=${cityName}&clerkId=${user?.id}`);
             const data = await res.json();
             setStories(Array.isArray(data) ? data : []);
         } catch (e) { console.error("Story fetch error", e); }
@@ -110,7 +112,8 @@ export default function AssistantPage() {
               lat: (coordinates.latitude || 0).toString(),
               lon: (coordinates.longitude || 0).toString()
             });
-            const res = await fetch(`http://localhost:5050/api/safety?${query}`, { signal: controller.signal });
+            const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+            const res = await fetch(`${BACKEND_URL}/api/safety?${query}`, { signal: controller.signal });
             clearTimeout(timeoutId);
             
             console.log("SAFETY API STATUS:", res.status, res.headers.get("content-type"));
@@ -134,8 +137,10 @@ export default function AssistantPage() {
 
   const handleGenerateStory = async () => {
     setIsGeneratingStory(true);
+    setIsGeneratingStory(true);
     try {
-        const res = await fetch(`http://localhost:5050/api/stories/generate`, {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+        const res = await fetch(`${BACKEND_URL}/api/stories/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city: cityName, itinerary, clerkId: user?.id })
@@ -154,7 +159,8 @@ export default function AssistantPage() {
     if (!itinerary || !user) return;
     setIsSavingTrip(true);
     try {
-        const res = await fetch(`http://localhost:5050/api/profile/trips`, {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+        const res = await fetch(`${BACKEND_URL}/api/profile/trips`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -345,7 +351,8 @@ export default function AssistantPage() {
                       onComplete={() => {
                         // Refresh quests after discovery
                         const fetchQuests = async () => {
-                            const res = await fetch(`http://localhost:5050/api/quests?city=${cityName}`);
+                            const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+                            const res = await fetch(`${BACKEND_URL}/api/quests?city=${cityName}`);
                             const data = await res.json();
                             setQuests(Array.isArray(data) ? data : []);
                         };
