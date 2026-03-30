@@ -39,6 +39,7 @@ export default function QuestCard({ quest, distance, onComplete }: QuestProps) {
       const base64String = (reader.result as string).split(',')[1];
       
       try {
+      try {
         const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
         const res = await fetch(`${BACKEND_URL}/api/quests/${quest._id}/verify`, {
           method: 'POST',
