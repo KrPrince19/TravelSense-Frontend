@@ -54,8 +54,23 @@ export default function Navbar() {
           </form>
 
           <div className="hidden lg:flex gap-8 text-sm font-medium text-slate-600">
+            {/* AI Assistant CTA - Conditional Redirect */}
+            {!isSignedIn ? (
+              <SignInButton mode="modal">
+                <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-blue-500/25 active:scale-95 transition-all transform hover:-translate-y-0.5">
+                  AI Assistant
+                </button>
+              </SignInButton>
+            ) : (
+              <Link 
+                href="/assistant" 
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-blue-500/25 active:scale-95 transition-all transform hover:-translate-y-0.5"
+              >
+                AI Assistant
+              </Link>
+            )}
+
             {[
-              { name: "AI Assistant", href: "/assistant", isCTA: true },
               { name: "Attractions", href: "/#attractions" },
               { name: "Restaurants", href: "/#restaurants" },
               { name: "Local Foods", href: "/#foods" },
@@ -67,17 +82,12 @@ export default function Navbar() {
               <Link 
                 key={link.name} 
                 href={link.href} 
-                className={link.isCTA 
-                  ? "px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-blue-500/25 active:scale-95 transition-all transform hover:-translate-y-0.5"
-                  : "relative py-1 group overflow-hidden"
-                }
+                className="relative py-1 group overflow-hidden"
               >
-                <span className={link.isCTA ? "" : "relative z-10 transition-colors duration-300 group-hover:text-blue-600 dark:text-slate-300 dark:group-hover:text-blue-400 text-sm font-medium text-slate-600"}>
+                <span className="relative z-10 transition-colors duration-300 group-hover:text-blue-600 dark:text-slate-300 dark:group-hover:text-blue-400 text-sm font-medium text-slate-600">
                   {link.name}
                 </span>
-                {!link.isCTA && (
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 origin-left transition-transform duration-300 ease-out group-hover:scale-x-100"></span>
-                )}
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 origin-left transition-transform duration-300 ease-out group-hover:scale-x-100"></span>
               </Link>
             );
           })}
@@ -136,8 +146,24 @@ export default function Navbar() {
             </form>
 
             <div className="flex flex-col gap-4">
+              {/* Mobile AI Assistant CTA */}
+              {!isSignedIn ? (
+                <SignInButton mode="modal">
+                  <button className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-center shadow-lg">
+                    AI Assistant
+                  </button>
+                </SignInButton>
+              ) : (
+                <Link 
+                  href="/assistant"
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-center shadow-lg"
+                >
+                  AI Assistant
+                </Link>
+              )}
+
                {[
-                 { name: "AI Assistant", href: "/assistant", isCTA: true },
                  { name: "Attractions", href: "/#attractions" },
                  { name: "Restaurants", href: "/#restaurants" },
                  { name: "Local Foods", href: "/#foods" },
@@ -150,10 +176,7 @@ export default function Navbar() {
                     key={link.name} 
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
-                    className={link.isCTA 
-                      ? "w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-center shadow-lg"
-                      : "w-full py-3 px-2 text-lg font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-50 dark:border-slate-800/50"
-                    }
+                    className="w-full py-3 px-2 text-lg font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-50 dark:border-slate-800/50"
                   >
                     {link.name}
                   </Link>
