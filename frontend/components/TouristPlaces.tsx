@@ -15,6 +15,9 @@ interface Place {
 }
 
 export default function TouristPlaces() {
+  const { coordinates } = useLocation();
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<"quota" | "server">("server");
 

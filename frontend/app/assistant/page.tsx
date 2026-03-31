@@ -6,11 +6,29 @@ import { useUser } from "@clerk/nextjs";
 import { useLocation } from "@/hooks/useLocation";
 import AssistantChat from "@/components/AssistantChat";
 import ErrorAlert from "@/components/ErrorAlert";
+import WeatherWidget from "@/components/WeatherWidget";
+import SafetyOverlay from "@/components/SafetyOverlay";
+import QuestCard from "@/components/QuestCard";
+import StoryBook from "@/components/StoryBook";
 import { 
   Calendar, Clock, MapPin, ChevronRight, Sparkles, 
   ArrowLeft, Trophy, BookMarked, Sparkle, Loader2,
   Compass, History, LayoutDashboard, AlertTriangle, CheckCircle2, Award
 } from "lucide-react";
+
+const getWeatherCondition = (code: number) => {
+  const mapping: Record<number, string> = {
+    0: "Clear Sky",
+    1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+    45: "Fog", 48: "Depositing Rime Fog",
+    51: "Light Drizzle", 53: "Moderate Drizzle", 55: "Dense Drizzle",
+    61: "Slight Rain", 63: "Moderate Rain", 65: "Heavy Rain",
+    71: "Slight Snowfall", 73: "Moderate Snowfall", 75: "Heavy Snowfall",
+    80: "Slight Rain Showers", 81: "Moderate Rain Showers", 82: "Violent Rain Showers",
+    95: "Thunderstorm", 96: "Thunderstorm with Slight Hail", 99: "Thunderstorm with Heavy Hail"
+  };
+  return mapping[code] || "Clear Sky";
+};
 
 export default function AssistantPage() {
   const { user } = useUser();
@@ -68,21 +86,21 @@ export default function AssistantPage() {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        // Use GPS coordinates for higher accuracy, fallback to city name
-        const query = (coordinates.latitude && coordinates.longitude) 
-          ? `${coordinates.latitude},${coordinates.longitude}` 
-          : encodeURIComponent(cityName);
-          
-        const res = await fetch(`https://wttr.in/${query}?format=j1`);
+        // Fallback to Nellore coordinates if geolocation is not available yet
+        const lat = coordinates.latitude || 14.4426; 
+        const lon = coordinates.longitude || 79.9865;
+        
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m`);
         const data = await res.json();
-        const current = data.current_condition[0];
+        const current = data.current;
+        
         setWeather({
-          temp: current.temp_C,
-          condition: current.weatherDesc[0].value,
-          humidity: current.humidity,
-          wind: current.windspeedKmph,
+          temp: Math.round(current.temperature_2m).toString(),
+          condition: getWeatherCondition(current.weather_code),
+          humidity: current.relative_humidity_2m.toString(),
+          wind: current.wind_speed_10m.toString(),
           city: cityName,
-          isRainy: current.weatherDesc[0].value.toLowerCase().includes('rain')
+          isRainy: [61, 63, 65, 80, 81, 82, 95, 96, 99].includes(current.weather_code)
         });
       } catch (e) { console.error("Failed to fetch weather", e); }
     };

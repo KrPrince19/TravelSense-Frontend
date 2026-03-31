@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
-import { Utensils, Star, Map, RefreshCw } from "lucide-react";
+import { Utensils, Star, Map, Route, RefreshCw } from "lucide-react";
 import ErrorAlert from "./ErrorAlert";
 
 interface RestaurantPlace {
