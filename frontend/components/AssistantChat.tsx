@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Send, MapPin, Loader2, FastForward } from "lucide-react";
+import { Send, MapPin, Loader2, Bot } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import ErrorAlert from "./ErrorAlert";
 
 interface Message {
   role: "user" | "assistant";
@@ -36,6 +37,8 @@ export default function AssistantChat({
   }, [triggerQuery]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<"quota" | "server">("server");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,6 +52,7 @@ export default function AssistantChat({
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
+    setError(null);
 
     try {
       const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
@@ -64,6 +68,13 @@ export default function AssistantChat({
         })
       });
 
+      if (res.status === 429) {
+        setErrorType("quota");
+        throw new Error("AI Service limit reached. Please try again in a minute.");
+      }
+
+      if (!res.ok) throw new Error("Server is currently busy. Please try again.");
+
       const data = await res.json();
       
       if (data.updatedItinerary) {
@@ -71,8 +82,10 @@ export default function AssistantChat({
       }
 
       setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: "assistant", content: "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later!" }]);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+      if (!err.message.includes("limit")) setErrorType("server");
     } finally {
       setIsTyping(false);
     }
@@ -130,6 +143,11 @@ export default function AssistantChat({
             <div className="bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-none border border-slate-100 dark:border-slate-700 shadow-sm">
               <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
             </div>
+          </div>
+        )}
+        {error && (
+          <div className="px-2 pb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+             <ErrorAlert type={errorType} message={error} />
           </div>
         )}
       </div>

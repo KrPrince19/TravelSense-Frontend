@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Languages, Send, Volume2, Copy, Check } from "lucide-react";
+import { Languages, Send, Volume2, Copy, Check, RefreshCw } from "lucide-react";
+import ErrorAlert from "./ErrorAlert";
 
 // Reuse and adapt the playAudio logic from LanguagePhrases
 const playAudio = (text: string, langName: string) => {
@@ -60,6 +61,8 @@ export default function Translate() {
   const [translatedText, setTranslatedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<"quota" | "server">("server");
 
   useEffect(() => {
     // Preload voices
@@ -71,6 +74,7 @@ export default function Translate() {
   const handleTranslate = async () => {
     if (!text.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
       const res = await fetch(`${BACKEND_URL}/api/translate`, {
@@ -78,11 +82,20 @@ export default function Translate() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, targetLanguage: targetLang })
       });
+
+      if (res.status === 429) {
+        setErrorType("quota");
+        throw new Error("AI Service limit reached. Please try again in 1-2 minutes.");
+      }
+
+      if (!res.ok) throw new Error("Translation service is currently busy.");
+
       const data = await res.json();
       setTranslatedText(data.translated);
-    } catch (error) {
-      console.error(error);
-      setTranslatedText("Error communicating with AI translation service.");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+      if (!err.message.includes("limit")) setErrorType("server");
     } finally {
       setLoading(false);
     }
@@ -153,8 +166,10 @@ export default function Translate() {
             )}
           </div>
 
-          <div className="flex-grow flex items-center justify-center">
-            {translatedText ? (
+          <div className="flex-grow flex flex-col items-center justify-center gap-4">
+            {error ? (
+              <ErrorAlert type={errorType} message={error} className="w-full" />
+            ) : translatedText ? (
               <p className="text-xl font-semibold text-slate-900 dark:text-white leading-relaxed text-center animate-in fade-in slide-in-from-bottom-2 duration-500">
                 {translatedText}
               </p>

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useLocation } from "@/hooks/useLocation";
-import { Utensils } from "lucide-react";
+import { Coffee, RefreshCw } from "lucide-react";
+import ErrorAlert from "./ErrorAlert";
 
 interface Food {
   name: string;
@@ -15,30 +16,37 @@ export default function LocalFoods() {
   const [foods, setFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<"quota" | "server">("server");
+
+  const fetchFoods = async () => {
+    if (!locationDetails?.city) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+      const response = await fetch(
+        `${BACKEND_URL}/api/culture?city=${encodeURIComponent(locationDetails.city)}&state=${encodeURIComponent(locationDetails.state)}&country=${encodeURIComponent(locationDetails.country)}`
+      );
+      
+      if (response.status === 429) {
+        setErrorType("quota");
+        throw new Error("AI Service limit reached. Please try again in 1-2 minutes.");
+      }
+
+      if (!response.ok) throw new Error("Could not load local food data.");
+      
+      const data = await response.json();
+      setFoods(data.famous_foods || []);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+      if (!err.message.includes("limit")) setErrorType("server");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!locationDetails?.city) return;
-
-    const fetchFoods = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
-        const response = await fetch(
-          `${BACKEND_URL}/api/culture?city=${encodeURIComponent(locationDetails.city)}&state=${encodeURIComponent(locationDetails.state)}&country=${encodeURIComponent(locationDetails.country)}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch culture data");
-        
-        const data = await response.json();
-        setFoods(data.famous_foods || []);
-      } catch (err: any) {
-        console.error(err);
-        setError("Could not load local foods. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFoods();
   }, [locationDetails?.city, locationDetails?.state, locationDetails?.country]);
 
@@ -46,13 +54,24 @@ export default function LocalFoods() {
 
   return (
     <div id="foods" className="w-full max-w-4xl mt-12 text-left">
-      <div className="group flex items-center gap-4 mb-8 pl-1 cursor-pointer">
-        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/30 shadow-inner ring-1 ring-rose-50 dark:ring-rose-500/20 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-          <Utensils className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
+      <div className="group flex items-center justify-between mb-8 pl-1">
+        <div className="flex items-center gap-4 cursor-pointer">
+          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-900/30 shadow-inner ring-1 ring-amber-50 dark:ring-amber-500/20 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <Coffee className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-yellow-600 tracking-tight transform group-hover:translate-x-2 transition-transform duration-300">
+            Local Delicacies & Sweets
+          </h2>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600 tracking-tight transform group-hover:translate-x-2 transition-transform duration-300">
-          Famous Local Foods and Sweets
-        </h2>
+        {error && (
+          <button 
+            onClick={() => fetchFoods()}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Retry
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -62,7 +81,7 @@ export default function LocalFoods() {
           ))}
         </div>
       ) : error ? (
-        <p className="text-rose-600 bg-rose-50 p-4 rounded-xl border border-rose-100">{error}</p>
+        <ErrorAlert type={errorType} message={error} />
       ) : foods.length === 0 ? (
         <p className="text-slate-500 bg-slate-50 p-4 rounded-xl border border-slate-100">No local foods found.</p>
       ) : (

@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useLocation } from "@/hooks/useLocation";
 import AssistantChat from "@/components/AssistantChat";
-import WeatherWidget from "@/components/WeatherWidget";
-import QuestCard from "@/components/QuestCard";
-import StoryBook from "@/components/StoryBook";
-import SafetyOverlay from "@/components/SafetyOverlay";
+import ErrorAlert from "@/components/ErrorAlert";
 import { 
   Calendar, Clock, MapPin, ChevronRight, Sparkles, 
   ArrowLeft, Trophy, BookMarked, Sparkle, Loader2,
@@ -55,15 +52,15 @@ export default function AssistantPage() {
                 body: JSON.stringify({ city: cityName, clerkId: user?.id })
             });
             console.log("QUEST API STATUS:", res.status, res.headers.get("content-type"));
-            if (res.status === 429) setIsLimitReached(true);
-            if (!res.ok) {
-                console.warn("Quest API returned non-OK status");
-                setQuests([]);
-                return;
-            }
             const data = await res.json();
+            if (res.status === 429) {
+                setIsLimitReached(true);
+            }
             setQuests(Array.isArray(data) ? data : []);
-        } catch (e) { console.error("Quest fetch error", e); }
+        } catch (e) { 
+            console.error("Quest fetch error", e);
+            setIsLimitReached(true); // Treat as limit if it fails during high-load tests
+        }
     };
     if (cityName) fetchQuests();
   }, [cityName]);
@@ -71,7 +68,12 @@ export default function AssistantPage() {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const res = await fetch(`https://wttr.in/${encodeURIComponent(cityName)}?format=j1`);
+        // Use GPS coordinates for higher accuracy, fallback to city name
+        const query = (coordinates.latitude && coordinates.longitude) 
+          ? `${coordinates.latitude},${coordinates.longitude}` 
+          : encodeURIComponent(cityName);
+          
+        const res = await fetch(`https://wttr.in/${query}?format=j1`);
         const data = await res.json();
         const current = data.current_condition[0];
         setWeather({
@@ -84,14 +86,15 @@ export default function AssistantPage() {
         });
       } catch (e) { console.error("Failed to fetch weather", e); }
     };
-    if (cityName) fetchWeather();
-  }, [cityName]);
+    if (cityName || coordinates.latitude) fetchWeather();
+  }, [cityName, coordinates.latitude, coordinates.longitude]);
 
   useEffect(() => {
     const fetchStories = async () => {
         try {
             const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
             const res = await fetch(`${BACKEND_URL}/api/stories?city=${cityName}&clerkId=${user?.id}`);
+            if (res.status === 429) setIsLimitReached(true);
             const data = await res.json();
             setStories(Array.isArray(data) ? data : []);
         } catch (e) { console.error("Story fetch error", e); }
@@ -218,6 +221,7 @@ export default function AssistantPage() {
             
             {/* Row 1: Status Widgets */}
             <div className="flex flex-col gap-6 w-full">
+               {isLimitReached && <ErrorAlert type="quota" className="mb-2" />}
                <WeatherWidget weather={weather} />
                <SafetyOverlay data={safety} isLoading={isSafetyLoading} error={safetyError} />
             </div>
@@ -331,17 +335,7 @@ export default function AssistantPage() {
                   <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Discover Rewards</span>
                </div>
                {/* Main Layout Grid */}
-          {isLimitReached && (
-            <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-[2rem] flex items-center gap-4 animate-bounce">
-                <div className="w-12 h-12 rounded-2xl bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-200">
-                    <AlertTriangle className="w-6 h-6" />
-                </div>
-                <div>
-                    <h3 className="text-red-900 font-black text-lg">AI Quota Exceeded ✋</h3>
-                    <p className="text-red-700 text-sm font-bold">The free-tier AI limits for today are finished. Please try again tomorrow or upgrade.</p>
-                </div>
-            </div>
-          )}
+          {/* AI Quota Banner Removed since we use ErrorAlert above now */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {quests.map((q) => (
                     <QuestCard 
