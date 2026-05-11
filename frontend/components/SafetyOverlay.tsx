@@ -18,7 +18,7 @@ interface SafetyOverlayProps {
 export default function SafetyOverlay({ data, isLoading, error }: SafetyOverlayProps) {
   if (isLoading) {
     return (
-      <div className="w-full p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 animate-pulse">
+      <div className="w-full p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 animate-pulse flex flex-col justify-center">
         <div className="flex items-center gap-4 mb-4">
            <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800"></div>
            <div className="space-y-2">
@@ -26,8 +26,8 @@ export default function SafetyOverlay({ data, isLoading, error }: SafetyOverlayP
               <div className="w-24 h-3 bg-slate-200 dark:bg-slate-800 rounded"></div>
            </div>
         </div>
-        <div className="text-sm font-bold text-slate-400 uppercase tracking-widest text-center py-4">
-           Analyzing real-time safety data...
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center py-2">
+           Syncing safety intelligence...
         </div>
       </div>
     );
@@ -35,14 +35,14 @@ export default function SafetyOverlay({ data, isLoading, error }: SafetyOverlayP
 
   if (error || (!data && !isLoading)) {
     return (
-      <div className="w-full p-8 rounded-[2.5rem] bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20">
-         <div className="flex flex-col items-center text-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg">
-                <ShieldOff className="w-6 h-6" />
-            </div>
-            <h3 className="text-amber-900 dark:text-amber-400 font-black uppercase text-sm tracking-tight">Safety Data Delayed</h3>
-            <p className="text-amber-700 dark:text-amber-500/70 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-               {error || "Real-time safety intelligence is currently offline. Please proceed with standard caution."}
+      <div className="w-full p-8 rounded-[2.5rem] bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-900/20 flex flex-col items-center justify-center text-center gap-4">
+         <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg">
+             <ShieldOff className="w-6 h-6" />
+         </div>
+         <div className="space-y-1">
+            <h3 className="text-amber-900 dark:text-amber-400 font-black uppercase text-xs tracking-tight">Intelligence Offline</h3>
+            <p className="text-amber-700/60 dark:text-amber-500/50 text-[10px] font-bold uppercase tracking-widest leading-relaxed max-w-[200px]">
+               {error || "Unable to reach real-time safety servers."}
             </p>
          </div>
       </div>
@@ -50,24 +50,22 @@ export default function SafetyOverlay({ data, isLoading, error }: SafetyOverlayP
   }
 
   const statusColors = {
-    Safe: "bg-emerald-500 shadow-emerald-500/40 text-emerald-500",
-    Moderate: "bg-amber-500 shadow-amber-500/40 text-amber-500",
-    Caution: "bg-red-500 shadow-red-500/40 text-red-500"
+    Safe: "bg-emerald-500 text-emerald-500 border-emerald-500/20 bg-emerald-500/10",
+    Moderate: "bg-amber-500 text-amber-500 border-amber-500/20 bg-amber-500/10",
+    Caution: "bg-red-500 text-red-500 border-red-500/20 bg-red-500/10"
   };
 
   const currentStatus = (data && data.status && statusColors[data.status]) ? data.status : "Safe";
 
   const statusBg = {
-    Safe: "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20",
-    Moderate: "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20",
-    Caution: "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20"
+    Safe: "bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60",
+    Moderate: "bg-amber-50/30 dark:bg-amber-900/5 border-amber-200/40 dark:border-amber-900/20",
+    Caution: "bg-red-50/30 dark:bg-red-900/5 border-red-200/40 dark:border-red-900/20"
   };
 
   return (
-    <div className={`w-full p-5 rounded-[2.5rem] border ${statusBg[currentStatus]} transition-all duration-700 animate-in fade-in slide-in-from-right-4`}>
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-        
-        {/* Status Indicator */}
+    <div className={`w-full p-8 rounded-[2.5rem] border ${statusBg[currentStatus]} shadow-2xl shadow-slate-200/20 dark:shadow-none transition-all duration-700 animate-in fade-in slide-in-from-right-4 flex flex-col justify-between`}>
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className={`w-12 h-12 rounded-2xl ${statusColors[currentStatus].split(' ')[0]} flex items-center justify-center text-white shadow-lg`}>
@@ -79,50 +77,42 @@ export default function SafetyOverlay({ data, isLoading, error }: SafetyOverlayP
           </div>
           <div>
             <div className="flex items-center gap-2">
-                <span className={`text-xs font-black uppercase tracking-widest ${statusColors[currentStatus].split(' ')[2]}`}>
-                    {data?.status || "Safe"} Zone
+                <span className={`text-[10px] font-black uppercase tracking-widest ${statusColors[currentStatus].split(' ')[1]}`}>
+                    {data?.status || "Safe"} ZONE
                 </span>
-                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">AI Security Check Passed</span>
+                <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">VERIFIED</span>
             </div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none mt-1">
-                {currentStatus === "Safe" ? "Nominal Threat Level" : "Contextual Alert Active"}
+            <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none mt-1">
+                {currentStatus === "Safe" ? "Security: Clear" : "Security: Alert"}
             </h3>
           </div>
         </div>
-
-        {/* Quick Insights Row */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-3 px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-2xl border border-white dark:border-slate-800 shadow-sm flex-1 lg:flex-none">
-                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
-                    <Info className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Safety Tip</span>
-                    <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[150px]">{data?.safetyTip || "Be aware of surroundings"}</span>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-3 px-4 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-2xl border border-white dark:border-slate-800 shadow-sm flex-1 lg:flex-none">
-                <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
-                    <Heart className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Health Alert</span>
-                    <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[150px]">{data?.healthAlert || "Stay hydrated"}</span>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-3 px-4 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-xl shadow-slate-900/20 flex-1 lg:flex-none">
-                <div className="p-2 rounded-xl bg-white/10 dark:bg-slate-900/10">
-                    <PhoneCall className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[8px] font-bold opacity-60 uppercase tracking-widest">Emergency</span>
-                    <span className="text-xs font-black truncate max-w-[120px]">{data?.emergency || "100"}</span>
-                </div>
-            </div>
+        
+        <div className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest ${statusColors[currentStatus].split(' ')[1]} ${statusColors[currentStatus].split(' ')[2]} ${statusColors[currentStatus].split(' ')[3]}`}>
+           {data?.status === "Safe" ? "Low Risk" : "Contextual"}
         </div>
+      </div>
+
+      <div className="space-y-3">
+         <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+            <Info className="w-3.5 h-3.5 text-indigo-500" />
+            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-tight line-clamp-1">{data?.safetyTip || "Standard travel awareness"}</p>
+         </div>
+         
+         <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl border border-rose-100 dark:border-rose-900/20">
+               <Heart className="w-3 h-3 text-rose-500" />
+               <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase truncate max-w-[80px]">{data?.healthAlert || "Normal"}</span>
+            </div>
+            <a 
+               href={`tel:${data?.emergency || "100"}`}
+               className="flex-1 flex items-center gap-2 px-3 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all"
+            >
+               <PhoneCall className="w-3 h-3 opacity-70" />
+               <span className="text-[9px] font-black uppercase tracking-widest">{data?.emergency || "100"}</span>
+            </a>
+         </div>
       </div>
     </div>
   );

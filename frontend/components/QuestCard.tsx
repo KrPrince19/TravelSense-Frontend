@@ -67,10 +67,10 @@ export default function QuestCard({ quest, distance, onComplete }: QuestProps) {
   };
 
   return (
-    <div className={`relative p-6 rounded-[2rem] border transition-all duration-500 overflow-hidden ${
+    <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 overflow-hidden group h-full flex flex-col justify-between ${
       quest.isCompleted 
-        ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/50 shadow-sm" 
-        : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl"
+        ? "bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200/40 dark:border-emerald-800/50" 
+        : "bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:-translate-y-1"
     }`}>
       
       {/* Hidden Camera Input */}
@@ -83,70 +83,77 @@ export default function QuestCard({ quest, distance, onComplete }: QuestProps) {
         className="hidden" 
       />
 
-      {/* Status Badge */}
-      <div className="flex items-center justify-between mb-4">
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-          quest.isCompleted 
-            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" 
-            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-        }`}>
-          {quest.isCompleted ? <CheckCircle2 className="w-3 h-3" /> : <Navigation className="w-3 h-3" />}
-          {quest.isCompleted ? "Captured" : "Active Quest"}
-        </div>
-        <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-black text-xs">
-          <Trophy className="w-3.5 h-3.5" />
-          {quest.points} PTS
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="space-y-2 mb-6">
-        <h3 className={`text-xl font-black tracking-tight ${quest.isCompleted ? "text-slate-400" : "text-slate-900 dark:text-white"}`}>
-          {quest.isCompleted ? quest.title : "???"} 
-        </h3>
-        <p className={`text-sm leading-relaxed ${quest.isCompleted ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>
-          {quest.riddle}
-        </p>
-      </div>
-
-      {/* Error / Loading Feedback */}
-      {isVerifying && (
-        <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl mb-4 border border-indigo-100 dark:border-indigo-900/30 animate-pulse">
-            <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
-            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">AI Vision Inspecting...</span>
-        </div>
-      )}
-
-      {error && !isVerifying && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/10 rounded-xl mb-4 border border-red-100 dark:border-red-900/20 text-red-600">
-            <XCircle className="w-4 h-4" />
-            <span className="text-[10px] font-bold leading-tight">{error}</span>
-        </div>
-      )}
-
-      {/* Footer / Capture Button */}
-      {!quest.isCompleted && (
-        <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800/50">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isInRange ? "bg-emerald-500 animate-ping" : "bg-slate-300 dark:bg-slate-700"}`}></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              {distance !== null ? `${Math.round(distance)}m Away` : "Searching GPS..."}
-            </span>
+      <div className="relative z-10">
+        {/* Status Badge */}
+        <div className="flex items-center justify-between mb-6">
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+            quest.isCompleted 
+              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+              : "bg-slate-100 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50"
+          }`}>
+            {quest.isCompleted ? <CheckCircle2 className="w-3 h-3" /> : <Navigation className="w-3 h-3" />}
+            {quest.isCompleted ? "COMPLETED" : "EXPLORATION"}
           </div>
-          {isInRange && !isVerifying && (
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all animate-in zoom-in"
-            >
-              <Camera className="w-4 h-4" />
-              Capture Discovery
-            </button>
-          )}
+          <div className="flex items-center gap-1.5 text-amber-500 font-black text-xs">
+            <Trophy className="w-4 h-4" />
+            <span>{quest.points}</span>
+          </div>
         </div>
-      )}
+
+        {/* Content */}
+        <div className="space-y-3 mb-8">
+          <h3 className={`text-xl font-black tracking-tight leading-tight ${quest.isCompleted ? "text-slate-400" : "text-slate-900 dark:text-white"}`}>
+            {quest.isCompleted ? quest.title : "Mystery Landmark"} 
+          </h3>
+          <p className={`text-xs leading-relaxed font-medium ${quest.isCompleted ? "text-slate-400/60" : "text-slate-500 dark:text-slate-400"}`}>
+            {quest.riddle}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative z-10 mt-auto">
+        {/* Error / Loading Feedback */}
+        {isVerifying && (
+          <div className="flex items-center gap-3 p-3 bg-indigo-600 rounded-xl mb-4 text-white animate-pulse shadow-lg shadow-indigo-500/20">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest">AI Vision Scanning...</span>
+          </div>
+        )}
+
+        {error && !isVerifying && (
+          <div className="flex items-center gap-2 p-3 bg-rose-500 rounded-xl mb-4 text-white shadow-lg shadow-rose-500/20">
+              <XCircle className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-tight">{error}</span>
+          </div>
+        )}
+
+        {/* Footer / Capture Button */}
+        {!quest.isCompleted && (
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/50">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Proximity</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${isInRange ? "bg-emerald-500 animate-pulse" : "bg-slate-300 dark:bg-slate-700"}`}></div>
+                <span className="text-[10px] font-black text-slate-900 dark:text-slate-200 uppercase">
+                  {distance !== null ? `${Math.round(distance)}m` : "Detecting..."}
+                </span>
+              </div>
+            </div>
+            {isInRange && !isVerifying && (
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+              >
+                <Camera className="w-4 h-4" />
+                Capture
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Background Icon Decoration */}
-      <div className={`absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none transform rotate-12 ${quest.isCompleted ? "text-emerald-500" : "text-slate-900"}`}>
+      <div className={`absolute -right-4 -bottom-4 opacity-[0.05] dark:opacity-[0.08] pointer-events-none transform rotate-12 group-hover:scale-110 transition-transform duration-700 ${quest.isCompleted ? "text-emerald-500" : "text-slate-900 dark:text-white"}`}>
         <Trophy className="w-32 h-32" />
       </div>
     </div>

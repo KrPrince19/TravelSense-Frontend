@@ -13,7 +13,8 @@ import StoryBook from "@/components/StoryBook";
 import { 
   Calendar, Clock, MapPin, ChevronRight, Sparkles, 
   ArrowLeft, Trophy, BookMarked, Sparkle, Loader2,
-  Compass, History, LayoutDashboard, AlertTriangle, CheckCircle2, Award
+  Compass, History, LayoutDashboard, AlertTriangle, CheckCircle2, Award,
+  Search, X
 } from "lucide-react";
 
 const getWeatherCondition = (code: number) => {
@@ -32,9 +33,12 @@ const getWeatherCondition = (code: number) => {
 
 export default function AssistantPage() {
   const { user } = useUser();
-  const { locationDetails, coordinates } = useLocation();
+  const { locationDetails, coordinates, searchLocation, loading: locationLoading } = useLocation();
   const [itinerary, setItinerary] = useState<any>(null);
   const [triggerQuery, setTriggerQuery] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [weather, setWeather] = useState<any>(null);
   const [quests, setQuests] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
@@ -158,7 +162,6 @@ export default function AssistantPage() {
 
   const handleGenerateStory = async () => {
     setIsGeneratingStory(true);
-    setIsGeneratingStory(true);
     try {
         const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
         const res = await fetch(`${BACKEND_URL}/api/stories/generate`, {
@@ -166,10 +169,20 @@ export default function AssistantPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ city: cityName, itinerary, clerkId: user?.id })
         });
+        
         const data = await res.json();
-        setStories(prev => [data, ...prev]);
-    } catch (e) { console.error("Story generation error", e); }
-    finally { setIsGeneratingStory(false); }
+        
+        if (res.ok) {
+            setStories(prev => [data, ...prev]);
+        } else {
+            console.error("Story generation failed:", data.error);
+            // Optionally show an alert to the user here
+        }
+    } catch (e) { 
+        console.error("Story generation network error", e); 
+    } finally { 
+        setIsGeneratingStory(false); 
+    }
   };
 
   const handleGenerateClick = () => {
@@ -200,79 +213,160 @@ export default function AssistantPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fcfdfe] dark:bg-slate-950">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900/30">
       
       {/* Premium Navigation Header */}
-      <header className="sticky top-0 z-50 w-full bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-slate-100 dark:border-slate-900/50 px-6 py-4 shadow-sm">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
+      <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4 sm:gap-8">
             <Link 
               href="/" 
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-100 dark:border-slate-800"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-bold text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-800"
             >
-              <ArrowLeft className="w-3 h-3" />
-              Exit
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Exit Dashboard</span>
+              <span className="sm:hidden">Exit</span>
             </Link>
-            <div className="h-6 w-[1px] bg-slate-100 dark:bg-slate-800 hidden sm:block"></div>
+            
+            <div className="hidden sm:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+            
             <div className="flex flex-col">
-              <h1 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{cityName} <span className="text-indigo-600">Assistant</span></h1>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time Travel Intelligence</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  {cityName} <span className="text-indigo-600">Assistant</span>
+                </h1>
+                <div className="hidden xs:flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold">
+                  LIVE
+                </div>
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden xs:block">Travel Intelligence Engine</p>
             </div>
           </div>
           
+          <div className="flex-1 max-w-md mx-8 hidden md:block">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className={`w-4 h-4 ${isSearching ? "text-indigo-500 animate-pulse" : "text-slate-400 group-focus-within:text-indigo-500"} transition-colors`} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    setIsSearching(true);
+                    await searchLocation(searchQuery);
+                    setSearchQuery("");
+                    setIsSearching(false);
+                  }
+                }}
+                placeholder="Search any city (e.g. Bihar, Paris...)"
+                className="w-full bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl py-2.5 pl-11 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+              {isSearching && (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                  <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30">
-               <Sparkles className="w-3 h-3" />
-               <span className="text-[10px] font-black uppercase tracking-widest">Powered by Gemini 2.0</span>
+            <button 
+              onClick={() => setShowSearch(!showSearch)}
+              className="md:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-800"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/20">
+              {user?.firstName?.charAt(0) || "U"}
             </div>
           </div>
         </div>
+
+        {/* Mobile Search Overlay */}
+        {showSearch && (
+          <div className="md:hidden px-4 pb-4 animate-in slide-in-from-top duration-300">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    setIsSearching(true);
+                    await searchLocation(searchQuery);
+                    setSearchQuery("");
+                    setIsSearching(false);
+                    setShowSearch(false);
+                  }
+                }}
+                placeholder="Enter city name..."
+                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white"
+                autoFocus
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <button 
+                onClick={() => setShowSearch(false)}
+                className="absolute right-4 top-1/2 -translate-y-1/2"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
-      <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         
-        {/* Main Grid: Itinerary & Chat */}
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 items-start">
+        {/* Dashboard Grid System */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left: The Experience */}
-          <div className="lg:col-span-8 flex flex-col gap-10 w-full">
+          {/* Main Content Area (8 Cols) */}
+          <div className="lg:col-span-8 flex flex-col gap-8">
             
-            {/* Row 1: Status Widgets */}
-            <div className="flex flex-col gap-6 w-full">
-               {isLimitReached && <ErrorAlert type="quota" className="mb-2" />}
-               <WeatherWidget weather={weather} />
-               <SafetyOverlay data={safety} isLoading={isSafetyLoading} error={safetyError} />
+            {/* Row 1: Real-time Intelligence (Weather & Safety) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+               <div className="h-full flex">
+                 <WeatherWidget weather={weather} />
+               </div>
+               <div className="h-full flex">
+                 <SafetyOverlay data={safety} isLoading={isSafetyLoading} error={safetyError} />
+               </div>
             </div>
 
-            {/* Row 2: Live Itinerary */}
-            <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none min-h-[600px] flex flex-col overflow-hidden">
-               <div className="px-10 py-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+            {isLimitReached && <ErrorAlert type="quota" className="w-full" />}
+
+            {/* Row 2: The Core Experience (Itinerary) */}
+            <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/60 dark:border-slate-800/60 shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden flex flex-col min-h-[600px]">
+               {/* Itinerary Header */}
+               <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-600/20">
                       <LayoutDashboard className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Your Live Itinerary</h2>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Updates in real-time based on your chat</p>
+                      <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Personalized Journey</h2>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Real-time Dynamic Planning</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {itinerary && (
+                  
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    {itinerary ? (
                       <button 
                          onClick={handleCompleteTrip}
                          disabled={isSavingTrip || tripSaved}
-                         className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-xl flex items-center gap-2 ${
+                         className={`flex-1 sm:flex-none px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 ${
                              tripSaved ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20"
                          }`}
                       >
                         {isSavingTrip ? <Loader2 className="w-3 h-3 animate-spin" /> : tripSaved ? <CheckCircle2 className="w-3 h-3" /> : <Award className="w-3 h-3" />}
-                        {tripSaved ? "Trip Archived!" : "Complete Trip"}
+                        {tripSaved ? "Archived" : "Complete Trip"}
                       </button>
-                    )}
-                    {!itinerary && (
+                    ) : (
                       <button 
                          onClick={handleGenerateClick}
-                         className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all active:scale-95 shadow-xl"
+                         className="flex-1 sm:flex-none px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white transition-all active:scale-95 shadow-xl"
                       >
                         Generate 3-Day Plan
                       </button>
@@ -280,24 +374,25 @@ export default function AssistantPage() {
                   </div>
                </div>
 
-               <div className="flex-1 p-10 overflow-y-auto max-h-[800px] scrollbar-hide">
+               {/* Itinerary Body */}
+               <div className="flex-1 p-8 overflow-y-auto max-h-[800px] scrollbar-hide">
                   {!itinerary ? (
-                    <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-center space-y-8 animate-in fade-in zoom-in duration-700">
-                      <div className="relative">
-                        <div className="w-32 h-32 rounded-[3rem] bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center animate-pulse">
-                          <Compass className="w-14 h-14 text-indigo-200 dark:text-indigo-800" />
+                    <div className="h-[400px] flex flex-col items-center justify-center text-center px-6 animate-in fade-in zoom-in duration-700">
+                      <div className="relative mb-8">
+                        <div className="w-24 h-24 rounded-[2rem] bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center animate-pulse">
+                          <Compass className="w-10 h-10 text-indigo-300 dark:text-indigo-800" />
                         </div>
-                        <Sparkles className="absolute -top-4 -right-4 w-10 h-10 text-indigo-500 animate-spin-slow" />
+                        <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-indigo-500 animate-bounce" />
                       </div>
-                      <div className="max-w-md">
-                        <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3">Begin Your Adventure</h3>
+                      <div className="max-w-md mx-auto">
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-3">Awaiting Your Command</h3>
                         <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">
                           I'm ready to craft a personalized journey through {cityName}. 
-                          Click the button above or tell me your preferences in the chat to start.
+                          Click generate above or chat with me to customize your adventure.
                         </p>
-                        <div className="flex flex-wrap justify-center gap-3">
-                           {["Foodie Journey 🍜", "Historical Tour 🏛️", "Solo Adventure 🎒"].map(tag => (
-                             <span key={tag} className="px-4 py-2 rounded-full border border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <div className="flex flex-wrap justify-center gap-2">
+                           {["Culinary Tour 🍜", "Modern Art 🏛️", "Hidden Gems 💎"].map(tag => (
+                             <span key={tag} className="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                {tag}
                              </span>
                            ))}
@@ -305,30 +400,33 @@ export default function AssistantPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-16">
+                    <div className="space-y-12">
                       {itinerary.days?.map((day: any) => (
-                        <div key={day.day} className="relative pl-12 space-y-8 border-l border-slate-100 dark:border-slate-800">
+                        <div key={day.day} className="relative pl-10 space-y-8 border-l-2 border-slate-100 dark:border-slate-800/50">
                           {/* Day Header Marker */}
-                          <div className="absolute top-0 -left-6 w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black text-lg shadow-xl">
+                          <div className="absolute top-0 -left-[1.35rem] w-10 h-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black text-base shadow-xl z-10">
                             {day.day}
                           </div>
                           
-                          <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-widest mb-10">Day {day.day} Summary</h2>
+                          <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-widest">Day {day.day} Overview</h2>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1 rounded-full uppercase tracking-widest">Active Plan</span>
+                          </div>
                           
-                          <div className="grid gap-6">
+                          <div className="grid gap-4">
                             {day.activities.map((act: any, idx: number) => (
-                              <div key={idx} className="group p-8 rounded-[2.5rem] bg-slate-50/50 dark:bg-slate-800/20 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-all duration-500 hover:shadow-2xl">
-                                <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
-                                  <div className="flex-1 space-y-3">
-                                    <div className="flex items-center gap-3">
-                                      <Clock className="w-4 h-4 text-indigo-500" />
+                              <div key={idx} className="group p-6 rounded-3xl bg-slate-50/50 dark:bg-slate-800/20 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 hover:shadow-xl">
+                                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                                  <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
                                       <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">{act.time}</span>
                                     </div>
-                                    <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">{act.title}</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">{act.description}</p>
+                                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{act.title}</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">{act.description}</p>
                                   </div>
-                                  <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                                    <ChevronRight className="w-5 h-5" />
+                                  <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                                    <ChevronRight className="w-4 h-4" />
                                   </div>
                                 </div>
                               </div>
@@ -339,89 +437,114 @@ export default function AssistantPage() {
                     </div>
                   )}
                </div>
-            </div>
+            </section>
 
-            {/* Row 3: Quests (Compact Row) */}
-            <section className="space-y-8">
+            {/* Row 3: Quests (Grid 3x1) */}
+            <section className="space-y-6">
                <div className="flex items-center justify-between px-2">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-amber-500 text-white shadow-lg shadow-amber-500/20">
+                    <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-lg shadow-amber-500/20">
                       <Trophy className="w-4 h-4" />
                     </div>
-                    <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Active City Quests</h2>
+                    <div className="flex flex-col">
+                      <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">City Expeditions</h2>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Earn rewards while exploring</p>
+                    </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Discover Rewards</span>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">3 Active Quests</span>
+                  </div>
                </div>
-               {/* Main Layout Grid */}
-          {/* AI Quota Banner Removed since we use ErrorAlert above now */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {quests.map((q) => (
-                    <QuestCard 
-                      key={q._id} 
-                      quest={q} 
-                      distance={coordinates.latitude && coordinates.longitude ? getDistance(coordinates.latitude, coordinates.longitude, q.lat, q.lon) : null} 
-                      onComplete={() => {
-                        // Refresh quests after discovery
-                        const fetchQuests = async () => {
-                            const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
-                            const res = await fetch(`${BACKEND_URL}/api/quests?city=${cityName}`);
-                            const data = await res.json();
-                            setQuests(Array.isArray(data) ? data : []);
-                        };
-                        fetchQuests();
-                      }}
-                    />
-                  ))}
+               
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {quests.length > 0 ? (
+                    quests.map((q) => (
+                      <QuestCard 
+                        key={q._id} 
+                        quest={q} 
+                        distance={coordinates.latitude && coordinates.longitude ? getDistance(coordinates.latitude, coordinates.longitude, q.lat, q.lon) : null} 
+                        onComplete={() => {
+                          const fetchQuests = async () => {
+                              const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+                              const res = await fetch(`${BACKEND_URL}/api/quests?city=${cityName}`);
+                              const data = await res.json();
+                              setQuests(Array.isArray(data) ? data : []);
+                          };
+                          fetchQuests();
+                        }}
+                      />
+                    ))
+                  ) : (
+                    [1,2,3].map(i => (
+                      <div key={i} className="h-[200px] rounded-3xl bg-slate-100/50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Quest {i} Loading...</p>
+                      </div>
+                    ))
+                  )}
                </div>
             </section>
 
           </div>
 
-          {/* Right: The Buddy (Sticky) */}
-          <div className="lg:col-span-4 w-full sticky top-28 h-[700px]">
-             <AssistantChat 
-               location={cityName}
-               coordinates={{ lat: coordinates.latitude, lon: coordinates.longitude }}
-               currentItinerary={itinerary}
-               onItineraryUpdate={setItinerary}
-               triggerQuery={triggerQuery}
-             />
-          </div>
+          {/* Right Sidebar: The Buddy (4 Cols) */}
+          <aside className="lg:col-span-4 w-full lg:sticky lg:top-28 h-[600px] lg:h-[calc(100vh-160px)]">
+             <div className="h-full relative">
+                {/* Decorative Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+                <div className="relative h-full">
+                  <AssistantChat 
+                    location={cityName}
+                    coordinates={{ lat: coordinates.latitude, lon: coordinates.longitude }}
+                    currentItinerary={itinerary}
+                    onItineraryUpdate={setItinerary}
+                    triggerQuery={triggerQuery}
+                  />
+                </div>
+             </div>
+          </aside>
 
         </div>
 
-        {/* Full Width Footer: Stories */}
-        <section className="border-t border-slate-100 dark:border-slate-900 pt-20 pb-32 space-y-16">
-           <div className="flex flex-col sm:flex-row items-center justify-between gap-8 max-w-5xl mx-auto text-center sm:text-left">
-              <div className="space-y-3">
-                <div className="flex items-center justify-center sm:justify-start gap-4">
-                   <div className="p-3 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                      <BookMarked className="w-6 h-6" />
+        {/* Full Width Footer Section: Stories */}
+        <section className="mt-24 pt-16 border-t border-slate-200 dark:border-slate-900 space-y-12">
+           <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+              <div className="space-y-4">
+                <div className="flex items-center justify-center md:justify-start gap-4">
+                   <div className="p-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                      <BookMarked className="w-8 h-8" />
                    </div>
-                   <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Your Travel Memories</h2>
+                   <div>
+                     <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Your Travelogue</h2>
+                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">AI-curated milestones of your adventure</p>
+                   </div>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Automatic diary of your most significant milestones in {cityName}.</p>
               </div>
               <button 
                   onClick={handleGenerateStory}
                   disabled={isGeneratingStory}
-                  className="group flex items-center gap-3 px-10 py-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl shadow-indigo-600/30 transition-all active:scale-95"
+                  className="group flex items-center gap-3 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl transition-all active:scale-95 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white"
                 >
                   {isGeneratingStory ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkle className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
-                  Generate Daily Story
+                  Generate Daily Entry
                 </button>
            </div>
 
-           <div className="space-y-20">
+           <div className="max-w-5xl mx-auto space-y-12 pb-24">
               {stories.length === 0 ? (
-                  <div className="py-24 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[4rem] max-w-4xl mx-auto flex flex-col items-center gap-4">
-                      <History className="w-12 h-12 text-slate-100 dark:text-slate-800" />
-                      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em]">No stories yet. Keep exploring to fill your scrapbook.</p>
+                  <div className="py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem] flex flex-col items-center gap-4 bg-slate-50/30 dark:bg-slate-900/10">
+                      <History className="w-10 h-10 text-slate-300 dark:text-slate-700" />
+                      <div className="space-y-1">
+                        <p className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em]">No Entries Found</p>
+                        <p className="text-slate-400 dark:text-slate-500 text-xs">Keep exploring {cityName} to populate your diary.</p>
+                      </div>
                   </div>
               ) : (
-                  stories.map((s) => (
-                      <StoryBook key={s._id} story={s} />
-                  ))
+                  <div className="grid gap-12">
+                    {stories.map((s, index) => (
+                        <StoryBook key={s._id || `story-${index}`} story={s} />
+                    ))}
+                  </div>
               )}
            </div>
         </section>

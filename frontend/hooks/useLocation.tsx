@@ -95,7 +95,7 @@ export const LocationProvider = ({ children }: { children: React.ReactNode }) =>
   const searchLocation = async (query: string) => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const res = await fetch(`/api/search-location?q=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error("Failed to contact search service.");
       const data = await res.json();
       if (!data || data.length === 0) throw new Error(`Could not find location "${query}". Try adding the country name.`);
